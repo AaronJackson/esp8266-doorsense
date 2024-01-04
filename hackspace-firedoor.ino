@@ -11,7 +11,11 @@ const char* mqtt_server = "";
 #define DOOR_CLOSED 0
 
 #define MESSAGE "Metalworking Firedoor state changed to "
-#define TOPIC "nh/irc/tx"
+#define PUBLISH_TOPIC "nh/irc/tx"
+
+#define STATUS_TOPIC "nh/status"
+
+#define NAME "MetalworkingFiredoor"
 
 static int last_state = DOOR_OPEN;
 
@@ -51,11 +55,12 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Create a random client ID
-    String clientId = "ESP8266Client-Firedoor";
+    String clientId = NAME;
     clientId += String(random(0xffff), HEX);
     // Attempt to connect
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
+      client.subscribe(STATUS_TOPIC "/req");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -66,12 +71,18 @@ void reconnect() {
   }
 }
 
+void callback(char* topic, byte* payload, unsigned int length) {
+  if (strcmp(topic, STATUS_TOPIC "/req") == 0 && memcmp(payload, "STATUS", length) == 0) {
+    client.publish(STATUS_TOPIC "/res", NAME ": Running");
+  }
+}
+
 void setup() {
   pinMode(SENSOR, INPUT_PULLUP);
   Serial.begin(115200);
   setup_wifi();
   client.setServer(mqtt_server, 1883);
-  //client.setCallback(callback);
+  client.setCallback(callback);
 
   last_state = digitalRead(SENSOR);
 }
@@ -80,7 +91,7 @@ void publish_state(int state) {
   const char *strstate = (state == DOOR_OPEN) ? MESSAGE "OPEN" : MESSAGE "CLOSED";
   Serial.print("Publish message: ");
   Serial.println(strstate);
-  client.publish(TOPIC, strstate);
+  client.publish(PUBLISH_TOPIC, strstate);
 }
 
 void loop() {
