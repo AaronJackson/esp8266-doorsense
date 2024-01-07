@@ -69,7 +69,7 @@ void reconnect() {
 
 void callback(char* topic, byte* payload, unsigned int length) {
   if (strcmp(topic, STATUS_TOPIC "/req") == 0 && memcmp(payload, "STATUS", length) == 0) {
-    client.publish(STATUS_TOPIC "/res", NAME ": Running");
+    client.publish(STATUS_TOPIC "/res", "Running: " NAME);
   }
 }
 
