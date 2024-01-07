@@ -97,6 +97,9 @@ void loop() {
   client.loop();
 
   const int state = digitalRead(SENSOR);
+  delay(100);
+  if (digitalRead(SENSOR) != state) return;
+
   if (state != last_state) {
     publish_state(state);
     delay(100);
